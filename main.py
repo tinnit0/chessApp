@@ -3,12 +3,12 @@ from PIL import Image, ImageTk
 from game import ChessGame
 from board import ChessBoard
 
-BOARD_SIZE = 500
+BOARD_SIZE = 1000
 SQUARE_SIZE = BOARD_SIZE // 8
+
 
 def load_image(filename):
     return ImageTk.PhotoImage(Image.open(filename))
-
 
 
 class ChessApp:
@@ -20,7 +20,7 @@ class ChessApp:
         self.canvas = tk.Canvas(root, width=BOARD_SIZE, height=BOARD_SIZE)
         self.canvas.pack()
 
-        self.game = ChessGame(self.canvas, self.images)
+        self.game = ChessGame(self.canvas, self.images, self.root)
 
         self.canvas.bind("<Button-1>", self.game.handle_click)
 
@@ -39,6 +39,7 @@ class ChessApp:
             'K': load_image('images/kW.png'),
             'P': load_image('images/pW.png'),
         }
+
 
 if __name__ == "__main__":
     root = tk.Tk()

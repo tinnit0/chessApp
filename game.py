@@ -9,19 +9,16 @@ SQUARE_SIZE = BOARD_SIZE // 8
 
 
 class ChessGame:
-    def __init__(self, canvas, images, pgn_file="game.pgn"):
+    def __init__(self, canvas, images, root, pgn_file="game.pgn"):
         self.board = ChessBoard(canvas, images)
         self.player_color = random.choice([chess.WHITE, chess.BLACK])
-        self.board.draw_board()
-
+        self.root = root  # Store the root window here
 
         self.pgn_game = chess.pgn.Game()
         self.current_node = self.pgn_game.add_variation(chess.Move.null())
         self.pgn_file = pgn_file
         self.decide_first_turn()
-
-        # with open(self.pgn_file, 'w') as f:
-        #     f.write(self.pgn_game.headers_to_string() + '\n')
+        self.board.draw_board()
 
     def decide_first_turn(self):
         if self.player_color == chess.BLACK:
