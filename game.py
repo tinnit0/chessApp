@@ -12,16 +12,16 @@ class ChessGame:
     def __init__(self, canvas, images, pgn_file="game.pgn"):
         self.board = ChessBoard(canvas, images)
         self.player_color = random.choice([chess.WHITE, chess.BLACK])
-        self.decide_first_turn()
         self.board.draw_board()
+
 
         self.pgn_game = chess.pgn.Game()
         self.current_node = self.pgn_game.add_variation(chess.Move.null())
         self.pgn_file = pgn_file
+        self.decide_first_turn()
 
-        # Initialize the PGN file
-        with open(self.pgn_file, 'w') as f:
-            f.write(self.pgn_game.headers_to_string() + '\n')
+        # with open(self.pgn_file, 'w') as f:
+        #     f.write(self.pgn_game.headers_to_string() + '\n')
 
     def decide_first_turn(self):
         if self.player_color == chess.BLACK:
@@ -36,6 +36,7 @@ class ChessGame:
                     random_move.from_square, random_move.to_square, promotion=chess.QUEEN)
             self.board.push_move(random_move)
             self.log_move(random_move, "Opponent")
+            self.check_game_over()
 
     def log_move(self, move, player):
         move_str = move.uci()
@@ -45,8 +46,15 @@ class ChessGame:
             self.current_node = self.current_node.add_variation(move)
 
     def save_game(self):
-        with open(self.pgn_file, 'w') as f:
-            f.write(self.pgn_game.accept(chess.pgn.StringExporter()) + '\n')
+        with open(self.pgn_file, 'a') as f:
+            f.write(self.pgn_game.accept(chess.pgn.StringExporter()) +
+                    '\n\n')
+
+    def check_game_over(self):
+        if self.board.is_game_over() == True:
+            print('game ended')
+            self.save_game()
+            self.board.reset_board()
 
     def handle_click(self, event):
         display_col = event.x // SQUARE_SIZE
@@ -84,6 +92,7 @@ class ChessGame:
                 if move in self.board.get_legal_moves():
                     self.board.make_move(move)
                     self.log_move(move, "Player")
+                    self.check_game_over()
 
                 if self.board.get_turn() != self.player_color:
                     self.make_random_opponent_move()

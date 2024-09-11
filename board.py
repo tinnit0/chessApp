@@ -1,5 +1,4 @@
 import chess
-from PIL import Image, ImageTk
 import tkinter as tk
 
 BOARD_SIZE = 500
@@ -12,6 +11,7 @@ class ChessBoard:
         self.possible_moves = set()
         self.canvas = canvas
         self.images = images
+        print(self.board)
 
     def draw_board(self):
         self.canvas.delete('all')
@@ -62,6 +62,12 @@ class ChessBoard:
 
     def get_turn(self):
         return self.board.turn
+
+    def is_game_over(self):
+        return self.board.is_game_over()
+    
+    def reset_board(self):
+        return self.board.reset_board()
 
     def push_move(self, move):
         self.board.push(move)
