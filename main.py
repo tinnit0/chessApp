@@ -2,14 +2,13 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from game import ChessGame
 from board import ChessBoard
+# from ai import AI
 
-BOARD_SIZE = 1000
+BOARD_SIZE = 500
 SQUARE_SIZE = BOARD_SIZE // 8
-
 
 def load_image(filename):
     return ImageTk.PhotoImage(Image.open(filename))
-
 
 class ChessApp:
     def __init__(self, root):

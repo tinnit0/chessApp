@@ -66,6 +66,9 @@ class ChessBoard:
     def is_game_over(self):
         return self.board.is_game_over()
     
+    def is_stalemate(self):
+        return self.board.is_stalemate()
+    
     def reset_board(self):
         return self.board.reset_board()
 
