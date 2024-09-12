@@ -19,6 +19,8 @@ class ChessGame:
         self.pgn_file = pgn_file
         self.pgn_moves = []
         self.ai_vs_ai = False
+        self.ai_color = None
+        
         self.load_pgn()
         self.decide_first_turn()
 
@@ -86,10 +88,11 @@ class ChessGame:
             self.check_game_over()
 
     def log_move(self, move, player):
-        if move in self.board.get_legal_moves():
-            move_str = move.uci()
-            if player == "Player" or player == "Opponent":
-                self.current_node = self.current_node.add_variation(move)
+        move_str = move.uci()
+        if player == "Player":
+            self.current_node = self.current_node.add_variation(move)
+        elif player == "Opponent":
+            self.current_node = self.current_node.add_variation(move)
 
     def save_game(self):
         with open(self.pgn_file, 'a') as f:
@@ -158,4 +161,4 @@ class ChessGame:
             self.make_random_opponent_move()
             self.board.draw_board()
             self.root.update()
-            self.root.after(200)
+            self.root.after(10)

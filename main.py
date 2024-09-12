@@ -44,3 +44,9 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = ChessApp(root)
     root.mainloop()
+# TODO Must
+#  ai die per turn check wat ie in een vorige  game succesfol heeft gedaan example ai had gewonen met start move a4 dan gaat ie dat weer proberen (er moet dan wel translation komen voor andere zijde example white a2->a4 black a7->a5)
+#  Should:
+#  light modus die maakt het zodat het ai vs random moves is met gebruik van print chess board ipv fotos die he tmooi maken
+#  Points for ai example voor het midden controllen winnen pieces pakken of zo min mogelijk pieces in gevaar brengen  
+#  deze ai wordt erg light weight en slecht vergeleken example stockfish en gaat niet in depth kunnen zien
