@@ -24,12 +24,17 @@ class ChessGame:
         self.load_pgn()
         self.decide_first_turn()
 
-        self.status_label = tk.Label(
-            root, text="1 = Player vs AI, 2 = AI vs AI", font=("Arial", 12), anchor="w")
-        self.status_label.pack(side="bottom", fill="x")
+        if canvas:  # Only initialize the status label and drawing if canvas is provided
+            self.status_label = tk.Label(
+                root, text="1 = Player vs AI, 2 = AI vs AI", font=("Arial", 12), anchor="w")
+            self.status_label.pack(side="bottom", fill="x")
+            
+            self.board.draw_board()
+            self.bind_keys()
 
-        self.board.draw_board()
-        self.bind_keys()
+    def print_board(self):
+        """Print the board state in a simple text format."""
+        print(self.board.board)  # This prints the chess.Board() in a readable format
 
     def bind_keys(self):
         self.root.bind("1", self.set_player_vs_ai)
@@ -61,29 +66,27 @@ class ChessGame:
             self.make_random_opponent_move()
 
     def make_random_opponent_move(self):
-        
-        print(f"Current FEN: {self.board.board.fen()}")
+        if self.board.is_game_over():
+            return
+
         legal_moves = self.board.get_legal_moves()
-        print(f"Legal Moves: {legal_moves}")
 
         if self.pgn_moves:
             next_pgn_move = self.pgn_moves.pop(0)
             if next_pgn_move in legal_moves:
                 move = next_pgn_move
             else:
-                print(f"PGN move {
-                      next_pgn_move} not legal, picking a random move.")
+                print(f"PGN move {next_pgn_move} not legal, picking a random move.")
                 move = random.choice(legal_moves)
         else:
             move = random.choice(legal_moves)
 
         if move:
             if self.board.is_pawn_promotion(move):
-                move = chess.Move(move.from_square,
-                                  move.to_square, promotion=chess.QUEEN)
+                move = chess.Move(move.from_square, move.to_square, promotion=chess.QUEEN)
+            
             self.board.push_move(move)
-            print(f"Move made: {move}")
-            print(f"New FEN: {self.board.board.fen()}")
+            
             self.log_move(move, "Opponent")
             self.check_game_over()
 
@@ -103,6 +106,7 @@ class ChessGame:
             print('Game ended')
             self.save_game()
             self.board.reset_board()
+            self.ai_vs_ai = False
 
     def handle_click(self, event):
         if self.ai_vs_ai:
@@ -161,4 +165,4 @@ class ChessGame:
             self.make_random_opponent_move()
             self.board.draw_board()
             self.root.update()
-            self.root.after(10)
+            self.root.after(100)

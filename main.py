@@ -1,8 +1,9 @@
 import tkinter as tk
 from PIL import Image, ImageTk
+import chess
 from game import ChessGame
 from board import ChessBoard
-# from ai import AI
+from ai import AI
 
 BOARD_SIZE = 500
 SQUARE_SIZE = BOARD_SIZE // 8
@@ -11,17 +12,28 @@ def load_image(filename):
     return ImageTk.PhotoImage(Image.open(filename))
 
 class ChessApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Chess Game")
+    def __init__(self, root=None, light_mode=False):
+        self.light_mode = light_mode
 
-        self.images = self.load_images()
-        self.canvas = tk.Canvas(root, width=BOARD_SIZE, height=BOARD_SIZE)
-        self.canvas.pack()
+        if not self.light_mode:
+            self.root = root
+            self.root.title("Chess Game")
 
-        self.game = ChessGame(self.canvas, self.images, self.root)
+            self.images = self.load_images()
+            self.canvas = tk.Canvas(root, width=BOARD_SIZE, height=BOARD_SIZE)
+            self.canvas.pack()
 
-        self.canvas.bind("<Button-1>", self.game.handle_click)
+            self.game = ChessGame(self.canvas, self.images, self.root)
+            self.canvas.bind("<Button-1>", self.game.handle_click)
+        else:
+            self.game = ChessGame(None, {}, None)
+            self.run_light_mode()
+
+    def run_light_mode(self):
+        while not self.game.board.is_game_over():
+            self.game.print_board()
+            self.game.make_random_opponent_move()
+            self.game.print_board()
 
     def load_images(self):
         return {
@@ -39,14 +51,24 @@ class ChessApp:
             'P': load_image('images/pW.png'),
         }
 
+    def prompt_for_move(self, player):
+        print(f"{player}'s turn:")
+        move = input("Enter your move (e.g., e2e4): ")
+        try:
+            return chess.Move.from_uci(move)
+        except ValueError:
+            print("Invalid move, please try again.")
+            return None
+
+    def print_board(self):
+        print(self.game.board.board)
+        print("\n")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = ChessApp(root)
-    root.mainloop()
-# TODO Must
-#  ai die per turn check wat ie in een vorige  game succesfol heeft gedaan example ai had gewonen met start move a4 dan gaat ie dat weer proberen (er moet dan wel translation komen voor andere zijde example white a2->a4 black a7->a5)
-#  Should:
-#  light modus die maakt het zodat het ai vs random moves is met gebruik van print chess board ipv fotos die he tmooi maken
-#  Points for ai example voor het midden controllen winnen pieces pakken of zo min mogelijk pieces in gevaar brengen  
-#  deze ai wordt erg light weight en slecht vergeleken example stockfish en gaat niet in depth kunnen zien
+    mode = input("Enter mode ('light' for terminal mode, any other for GUI): ")
+    if mode.lower() == 'light':
+        app = ChessApp(light_mode=True)
+    else:
+        root = tk.Tk()
+        app = ChessApp(root)
+        root.mainloop()
