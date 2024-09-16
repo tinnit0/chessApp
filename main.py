@@ -2,8 +2,6 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import chess
 from game import ChessGame
-from board import ChessBoard
-from ai import AI
 
 BOARD_SIZE = 500
 SQUARE_SIZE = BOARD_SIZE // 8
@@ -65,8 +63,8 @@ class ChessApp:
         print("\n")
 
 if __name__ == "__main__":
-    mode = input("Enter mode ('light' for terminal mode, any other for GUI): ")
-    if mode.lower() == 'light':
+    mode = input("'1' for light mode: ")
+    if mode.lower() == '1':
         app = ChessApp(light_mode=True)
     else:
         root = tk.Tk()

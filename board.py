@@ -42,7 +42,11 @@ class ChessBoard:
         if self.get_turn() == chess.WHITE:
             return 7 - row, col
         else:
-            return row, col
+            return row, col      
+
+    def is_square_attacked(self, square, color):
+        opponent_color = not color
+        return self.board.is_attacked_by(opponent_color, square)
 
     def display_to_board(self, display_row, display_col):
         if self.get_turn() == chess.WHITE:
