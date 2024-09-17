@@ -70,3 +70,5 @@ if __name__ == "__main__":
         root = tk.Tk()
         app = ChessApp(root)
         root.mainloop()
+
+        # in depth thinking

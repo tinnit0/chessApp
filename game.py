@@ -177,49 +177,98 @@ class ChessGame:
                 print("No valid move found or move is not legal")
                 break
 
+
 class AI:
-    def __init__(self, color, board):
+    def __init__(self, color, board, max_depth=2):
         self.board = board
         self.color = color
+        self.max_depth = max_depth
         self.successful_moves = []
         self.load_successful_moves()
 
-    def evaluate_move(self, move):
-        points = 0
+    def evaluate_board(self):
+        score = 0
+        piece_values = {
+            chess.PAWN: 1,
+            chess.KNIGHT: 3,
+            chess.BISHOP: 3,
+            chess.ROOK: 5,
+            chess.QUEEN: 9,
+            chess.KING: 0
+        }
 
-        center_squares = [chess.E4, chess.D4, chess.E5, chess.D5]
-        if move.to_square in center_squares:
-            points += 5
+        for square in chess.SQUARES:
+            piece = self.board.get_piece_at(square)
+            if piece is not None:
+                piece_value = piece_values.get(piece.piece_type, 0)
+                if self.board.is_square_attacked(square, not piece.color):
+                    attackers = self.board.get_attackers(
+                        square, not piece.color)
+                    defenders = self.board.get_attackers(square, piece.color)
 
-        target_piece = self.board.get_piece_at(move.to_square)
-        if target_piece and target_piece.color != self.color:
-            points += 10
+                    if attackers:
+                        attacker_values = [
+                            piece_values.get(self.board.get_piece_at(
+                                attacker).piece_type, 0)
+                            for attacker in attackers if self.board.get_piece_at(attacker) is not None
+                        ]
 
-        if self.is_in_danger(move.to_square):
-            points -= 5
+                        if attacker_values:
+                            lowest_attacker_value = min(attacker_values)
 
-        return points
+                            if not defenders or (defenders and lowest_attacker_value < piece_value):
+                                score -= piece_value  # Penalize if attacked by a stronger piece
+                            else:
+                                score += piece_value  # Reward if defended successfully
+                else:
+                    if piece.color == self.color:
+                        score += piece_value
+                    else:
+                        score -= piece_value
+            print(square, score)
+        return score
 
-    def is_in_danger(self, square):
-        return self.board.is_square_attacked(square, self.color)
+    def minimax(self, depth, alpha, beta, maximizing_player):
+        if depth == 0 or self.board.is_game_over():
+            return self.evaluate_board(), None
+
+        legal_moves = list(self.board.get_legal_moves())
+        best_move = None
+
+        if maximizing_player:
+            max_eval = -float('inf')
+            for move in legal_moves:
+                self.board.push_move(move)
+                evaluation, _ = self.minimax(depth - 1, alpha, beta, False)
+                self.board.pop_move()
+                if evaluation > max_eval:
+                    max_eval = evaluation
+                    best_move = move
+                alpha = max(alpha, evaluation)
+                if beta <= alpha:
+                    break  # Beta cut-off
+            return max_eval, best_move
+        else:
+            min_eval = float('inf')
+            for move in legal_moves:
+                self.board.push_move(move)
+                evaluation, _ = self.minimax(depth - 1, alpha, beta, True)
+                self.board.pop_move()
+                if evaluation < min_eval:
+                    min_eval = evaluation
+                    best_move = move
+                beta = min(beta, evaluation)
+                if beta <= alpha:
+                    break 
+            return min_eval, best_move
 
     def make_best_move(self):
-        legal_moves = self.board.get_legal_moves()
-        if not legal_moves:
-            print("No legal moves available")
-            return None
-
-        best_move = None
-        best_score = -float('inf')
-
-        for move in legal_moves:
-            score = self.evaluate_move(move)
-            if score > best_score:
-                best_score = score
-                best_move = move
-
-        print(f"Best move found: {best_move}")
-        return best_move or random.choice(legal_moves)
+        _, best_move = self.minimax(
+            self.max_depth, -float('inf'), float('inf'), True)
+        if best_move:
+            return best_move
+        else:
+            return random.choice(list(self.board.get_legal_moves()))
 
     def load_successful_moves(self):
         self.successful_moves = [
@@ -233,7 +282,7 @@ class AI:
         return move
 
     def make_move(self):
-        legal_moves = self.board.get_legal_moves()
+        legal_moves = list(self.board.get_legal_moves())
 
         for move in self.successful_moves:
             translated_move = self.translate_move(chess.Move(move[0], move[1]))
