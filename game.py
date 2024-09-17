@@ -179,7 +179,7 @@ class ChessGame:
 
 
 class AI:
-    def __init__(self, color, board, max_depth=2):
+    def __init__(self, color, board, max_depth=3):  # Increased depth to 3
         self.board = board
         self.color = color
         self.max_depth = max_depth
@@ -197,10 +197,18 @@ class AI:
             chess.KING: 0
         }
 
+        center_squares = [chess.E4, chess.D4, chess.E5,
+                          chess.D5]
+
         for square in chess.SQUARES:
             piece = self.board.get_piece_at(square)
             if piece is not None:
                 piece_value = piece_values.get(piece.piece_type, 0)
+                piece_score = piece_value
+
+                if square in center_squares:
+                    piece_score += 0.5
+
                 if self.board.is_square_attacked(square, not piece.color):
                     attackers = self.board.get_attackers(
                         square, not piece.color)
@@ -216,15 +224,15 @@ class AI:
                         if attacker_values:
                             lowest_attacker_value = min(attacker_values)
 
-                            if not defenders or (defenders and lowest_attacker_value < piece_value):
-                                score -= piece_value  # Penalize if attacked by a stronger piece
+                            if not defenders or (lowest_attacker_value < piece_value):
+                                piece_score -= piece_value
                             else:
-                                score += piece_value  # Reward if defended successfully
+                                piece_score += piece_value
+
+                if piece.color == self.color:
+                    score += piece_score
                 else:
-                    if piece.color == self.color:
-                        score += piece_value
-                    else:
-                        score -= piece_value
+                    score -= piece_score
             print(square, score)
         return score
 
@@ -241,12 +249,15 @@ class AI:
                 self.board.push_move(move)
                 evaluation, _ = self.minimax(depth - 1, alpha, beta, False)
                 self.board.pop_move()
+
                 if evaluation > max_eval:
                     max_eval = evaluation
                     best_move = move
+
                 alpha = max(alpha, evaluation)
                 if beta <= alpha:
-                    break  # Beta cut-off
+                    break
+
             return max_eval, best_move
         else:
             min_eval = float('inf')
@@ -254,12 +265,15 @@ class AI:
                 self.board.push_move(move)
                 evaluation, _ = self.minimax(depth - 1, alpha, beta, True)
                 self.board.pop_move()
+
                 if evaluation < min_eval:
                     min_eval = evaluation
                     best_move = move
+
                 beta = min(beta, evaluation)
                 if beta <= alpha:
-                    break 
+                    break
+
             return min_eval, best_move
 
     def make_best_move(self):
