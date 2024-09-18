@@ -2,12 +2,16 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import chess
 from game import ChessGame
+from game import AI
+import time
 
 BOARD_SIZE = 500
 SQUARE_SIZE = BOARD_SIZE // 8
 
+
 def load_image(filename):
     return ImageTk.PhotoImage(Image.open(filename))
+
 
 class ChessApp:
     def __init__(self, root=None, light_mode=False):
@@ -27,12 +31,6 @@ class ChessApp:
             self.game = ChessGame(None, {}, None)
             self.run_light_mode()
 
-    def run_light_mode(self):
-        while not self.game.board.is_game_over():
-            self.game.print_board()
-            self.game.make_random_opponent_move()
-            self.game.print_board()
-
     def load_images(self):
         return {
             'r': load_image('images/rB.png'),
@@ -49,18 +47,40 @@ class ChessApp:
             'P': load_image('images/pW.png'),
         }
 
-    def prompt_for_move(self, player):
-        print(f"{player}'s turn:")
-        move = input("Enter your move (e.g., e2e4): ")
-        try:
-            return chess.Move.from_uci(move)
-        except ValueError:
-            print("Invalid move, please try again.")
-            return None
+    def run_light_mode(self):
+        ai_color = chess.WHITE
+        ai = AI(ai_color, self.game.board)
+        self.play_game(ai_color, ai)
+
+    def restart_game(self):
+        self.game = ChessGame(None, {}, None)
+        ai_color = chess.WHITE
+        ai = AI(ai_color, self.game.board)
+        self.play_game(ai_color, ai)
+
+    def play_game(self, ai_color, ai):
+        while not self.game.board.is_game_over():
+            self.print_board()
+
+            if self.game.board.get_turn() == ai_color:
+                best_move = ai.make_move()
+                if best_move:
+                    print(f"AI move: {best_move}")
+                    self.game.board.push_move(best_move)
+                    self.game.log_move(best_move, "AI")
+            else:
+                self.game.make_random_opponent_move()
+
+            self.print_board()
+
+        print("Game over!")
+        time.sleep(1)
+        self.restart_game()
 
     def print_board(self):
         print(self.game.board.board)
         print("\n")
+
 
 if __name__ == "__main__":
     mode = input("'1' for light mode: ")
@@ -70,5 +90,3 @@ if __name__ == "__main__":
         root = tk.Tk()
         app = ChessApp(root)
         root.mainloop()
-
-        # in depth thinking

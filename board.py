@@ -75,12 +75,25 @@ class ChessBoard:
 
     def is_stalemate(self):
         return self.board.is_stalemate()
+    
+    def is_check(self):
+        return self.board.is_check()
 
     def reset_board(self):
         return self.board.reset()
+    
+    def find_king(self, color):
+        for square in chess.SQUARES:
+            piece = self.get_piece_at(square)
+            if piece is not None and piece.piece_type == chess.KING and piece.color == color:
+                return square
+        return None
 
     def push_move(self, move):
         self.board.push(move)
+
+    def is_checkmate(self):
+        self.board.is_checkmate()
 
     def pop_move(self):
         self.board.pop()
@@ -88,27 +101,8 @@ class ChessBoard:
     def is_pawn_promotion(self, move):
         return self.board.piece_at(move.from_square).piece_type == chess.PAWN and chess.square_rank(move.to_square) in [0, 7]
 
-    def get_material_score(self, color):
-        piece_values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3,
-                        chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
-        score = 0
-        for square in chess.SQUARES:
-            piece = self.board.piece_at(square)
-            if piece and piece.color == color:
-                score += piece_values[piece.piece_type]
-        return score
-
     def get_attackers(self, square, attacking_color):
         return [sq for sq in chess.SQUARES if self.board.is_attacked_by(attacking_color, square)]
-
-    def evaluate_position(self, color):
-        print('evaluate')
-        material_score = self.get_material_score(color)
-        opponent_score = self.get_material_score(not color)
-
-        evaluation = material_score - opponent_score
-
-        return evaluation
 
     def __str__(self):
         return str(self.board)
