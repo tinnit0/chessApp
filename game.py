@@ -6,7 +6,7 @@ import tkinter.simpledialog as simpledialog
 import tkinter as tk
 import tkinter.messagebox as messagebox
 
-BOARD_SIZE = 500
+BOARD_SIZE = 540
 SQUARE_SIZE = BOARD_SIZE // 8
 
 
@@ -39,9 +39,8 @@ class ChessGame:
         print(self.board.board)
 
     def update_images(self, new_images):
-        """Update images and redraw the board."""
         self.images = new_images
-        self.board.images = new_images  # Directly update ChessBoard's images
+        self.board.images = new_images
         self.board.draw_board()
         self.root.update()
 
@@ -90,11 +89,10 @@ class ChessGame:
     def check_game_over(self):
         if self.board.is_game_over():
             print('Game ended')
-            self.save_game()
 
             if self.ai_vs_ai:
                 print("AI vs AI game over. Restarting in 4 seconds...")
-                self.root.after(4000, self.reset_game)
+                self.root.after(400, self.reset_game)
             else:
                 self.show_player_vs_ai_end_dialog()
 
@@ -135,20 +133,16 @@ class ChessGame:
             return
 
         current_turn = self.board.get_turn()
-        print(f"Current turn: {
-              'White' if current_turn == chess.WHITE else 'Black'}")
 
         if current_turn == self.ai_color:
             move = self.ai.make_move()
             if move and move in self.board.get_legal_moves():
                 self.board.push_move(move)
                 self.log_move(move, "AI")
-                print(f"AI move: {move}")
             else:
                 print(f"Invalid move by AI: {move}")
         else:
             move = self.make_random_opponent_move()
-            print(f"Opponent random AI move: {move}")
 
         self.board.draw_board()
         self.root.update()
@@ -257,15 +251,12 @@ class AI:
         # Check for checkmate or stalemate
         if self.board.is_checkmate():
             if self.board.get_turn() == self.color:
-                print("Checkmate: AI lost")
                 return -float('inf')  # AI is losing
             else:
-                print("Checkmate: AI is winning")
                 return float('inf')   # AI is winning
 
         if self.board.is_stalemate():
-            print("Stalemate: Negative points for stalemate")
-            return -50  # Penalize a stalemate with -50 points
+            return -50
 
         # Evaluate piece values and control of center
         for square in chess.SQUARES:
@@ -274,23 +265,15 @@ class AI:
                 value = piece_values[piece.piece_type]
                 if piece.color == self.color:
                     score += value
-                    print(f"AI piece {piece} at {square} adds {
-                        value}. Current score: {score}")
                 else:
                     score -= value
-                    print(f"Opponent piece {piece} at {square} subtracts {
-                        value}. Current score: {score}")
 
                 # Bonus for controlling the center
                 if square in center_squares:
                     if piece.color == self.color:
-                        score += 0.5  # Small bonus for controlling center
-                        print(f"AI piece {piece} controls center at {
-                            square}. Bonus: 0.5. Current score: {score}")
+                        score += 0.5
                     else:
                         score -= 0.5
-                        print(f"Opponent piece {piece} controls center at {
-                            square}. Penalty: -0.5. Current score: {score}")
 
         # Evaluate sacrifices
         # Check if sacrificing a piece results in a better score
@@ -298,21 +281,17 @@ class AI:
             king_square = self.board.find_king(not self.color)
             attacking_pieces = self.board.get_attackers(king_square, self.color)
             score += len(attacking_pieces) * 0.5
-            print(f"Attacking king with {len(attacking_pieces)} pieces. Bonus: {
-                len(attacking_pieces) * 0.5}. Current score: {score}")
 
         return score
 
     def minimax(self, depth, alpha, beta, maximizing_player):
         if depth == 0 or self.board.is_game_over():
-            print(f"Evaluating position at depth {depth} with score: {self.evaluate_board()}")
             return self.evaluate_board(), None
 
         legal_moves = list(self.board.get_legal_moves())
         best_move = None
 
         if maximizing_player:
-            print("Maximizing player")
             max_eval = -float('inf')
             for move in legal_moves:
                 self.board.push_move(move)

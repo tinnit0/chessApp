@@ -3,6 +3,9 @@ import tkinter as tk
 import tkinter.simpledialog as simpledialog
 from PIL import Image, ImageTk
 
+BOARD_SIZE = 540
+SQUARE_SIZE = BOARD_SIZE // 8
+
 class ChessBoard:
     def __init__(self, canvas, images, starting_color, root=None):
         self.board = chess.Board()
