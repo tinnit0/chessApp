@@ -4,27 +4,26 @@ from board import ChessBoard
 import random
 import tkinter.simpledialog as simpledialog
 import tkinter as tk
-# from ai import AI
+import tkinter.messagebox as messagebox
 
 BOARD_SIZE = 500
 SQUARE_SIZE = BOARD_SIZE // 8
 
 
 class ChessGame:
-    def __init__(self, canvas, images, root, pgn_file="game.pgn"):
-        self.board = ChessBoard(canvas, images)
+    def __init__(self, canvas, images, root):
         self.player_color = random.choice([chess.WHITE, chess.BLACK])
+        self.board = ChessBoard(canvas, images, self.player_color)
         self.root = root
         self.pgn_game = chess.pgn.Game()
         self.current_node = self.pgn_game.add_variation(chess.Move.null())
-        self.pgn_file = pgn_file
         self.pgn_moves = []
         self.ai_vs_ai = False
+        self.images = images
 
         self.ai_color = chess.BLACK if self.player_color == chess.WHITE else chess.WHITE
         self.ai = AI(self.ai_color, self.board)
 
-        self.load_pgn()
         self.decide_first_turn()
 
         if canvas:
@@ -34,10 +33,17 @@ class ChessGame:
 
             self.board.draw_board()
             self.bind_keys()
+            canvas.bind("<Button-1>", self.handle_click)
 
     def print_board(self):
-        """Print the board state in a simple text format."""
         print(self.board.board)
+
+    def update_images(self, new_images):
+        """Update images and redraw the board."""
+        self.images = new_images
+        self.board.images = new_images  # Directly update ChessBoard's images
+        self.board.draw_board()
+        self.root.update()
 
     def bind_keys(self):
         self.root.bind("1", self.set_player_vs_ai)
@@ -52,36 +58,6 @@ class ChessGame:
         self.ai_vs_ai = True
         self.run_ai_vs_ai()
 
-    def run_light_mode(self):
-        while not self.game.board.is_game_over():
-            self.game.print_board()
-
-            if self.game.board.get_turn() == self.ai.color:
-                best_move = self.ai.make_move()
-                if best_move:
-                    print(f"AI move: {best_move}")
-                    self.game.board.push_move(best_move)
-                    self.game.log_move(best_move, "AI")
-            else:
-                self.game.make_random_opponent_move()
-
-            self.game.print_board()
-
-        print("Game over!")
-
-    def load_pgn(self):
-        try:
-            with open(self.pgn_file, 'r') as pgn:
-                game = chess.pgn.read_game(pgn)
-                if game is not None and game.mainline_moves():
-                    self.pgn_moves = list(game.mainline_moves())
-                else:
-                    self.pgn_moves = []
-        except FileNotFoundError:
-            print(f"PGN file {self.pgn_file} not found.")
-            self.pgn_moves = []
-
-
     def decide_first_turn(self):
         if self.player_color == chess.BLACK:
             move = self.ai.make_move()
@@ -92,8 +68,8 @@ class ChessGame:
             self.root.update()
 
     def make_random_opponent_move(self):
-        if self.board.is_game_over():
-            return
+        if self.check_game_over():
+            return None
 
         legal_moves = self.board.get_legal_moves()
         if legal_moves:
@@ -103,30 +79,87 @@ class ChessGame:
                     random_move.from_square, random_move.to_square, promotion=chess.QUEEN)
             self.board.push_move(random_move)
             self.log_move(random_move, "Opponent")
+            return random_move
+        return None
 
     def log_move(self, move, player):
         move_str = move.uci()
-        if player == "Player":
-            self.current_node = self.current_node.add_variation(move)
-        elif player == "Opponent":
-            self.current_node = self.current_node.add_variation(move)
-
-    def save_game(self):
-        with open(self.pgn_file, 'a') as f:
-            f.write(self.pgn_game.accept(chess.pgn.StringExporter()) + '\n\n')
+        self.current_node = self.current_node.add_variation(move)
+        self.pgn_moves.append(move_str)
 
     def check_game_over(self):
         if self.board.is_game_over():
             print('Game ended')
             self.save_game()
+
+            if self.ai_vs_ai:
+                print("AI vs AI game over. Restarting in 4 seconds...")
+                self.root.after(4000, self.reset_game)
+            else:
+                self.show_player_vs_ai_end_dialog()
+
             self.board.reset_board()
             self.ai_vs_ai = False
+            return True
+        return False
+
+    def show_player_vs_ai_end_dialog(self):
+        if self.board.is_checkmate():
+            if self.board.get_turn() == self.player_color:
+                message = "Game Over: You lost. Do you want to retry?"
+            else:
+                message = "You won! Do you want to retry?"
+        elif self.board.is_stalemate():
+            message = "The game is a draw. Do you want to retry?"
+        else:
+            return
+
+        result = messagebox.askquestion("Game Over", message, icon='warning')
+
+        if result == 'yes':
+            self.reset_game()
+        else:
+            self.root.quit()
+
+    def reset_game(self):
+        self.board.reset_board()
+        self.pgn_game = chess.pgn.Game()
+        self.current_node = self.pgn_game.add_variation(chess.Move.null())
+        self.decide_first_turn()
+        self.board.draw_board()
+        self.root.update()
+
+    def run_ai_vs_ai(self):
+        if self.check_game_over():
+            print("Game over detected")
+            return
+
+        current_turn = self.board.get_turn()
+        print(f"Current turn: {
+              'White' if current_turn == chess.WHITE else 'Black'}")
+
+        if current_turn == self.ai_color:
+            move = self.ai.make_move()
+            if move and move in self.board.get_legal_moves():
+                self.board.push_move(move)
+                self.log_move(move, "AI")
+                print(f"AI move: {move}")
+            else:
+                print(f"Invalid move by AI: {move}")
+        else:
+            move = self.make_random_opponent_move()
+            print(f"Opponent random AI move: {move}")
+
+        self.board.draw_board()
+        self.root.update()
+
+        self.root.after(400, self.run_ai_vs_ai)
 
     def handle_click(self, event):
         if self.ai_vs_ai:
             return
 
-        if self.board.is_game_over():
+        if self.check_game_over():
             print("Game over detected, no further moves allowed.")
             return
 
@@ -172,50 +205,32 @@ class ChessGame:
                     self.log_move(move, "Player")
                     self.check_game_over()
 
-                    if not self.board.is_game_over() and self.board.get_turn() == self.ai_color:
-                        ai_move = self.ai.make_move()
-                        if ai_move:
-                            self.board.push_move(ai_move)
-                            self.log_move(ai_move, "AI")
-                            self.board.draw_board()
-                            self.root.update()
+                    if not self.check_game_over() and self.board.get_turn() == self.ai_color:
+                        self.root.after(200, self.ai_turn)
 
-                    self.board.selected_piece = None
-                    self.board.possible_moves = set()
+                self.board.selected_piece = None
+                self.board.possible_moves = set()
             else:
                 self.board.selected_piece = None
                 self.board.possible_moves = set()
 
         self.board.draw_board()
 
-    def run_ai_vs_ai(self):
-        if self.board.is_game_over():
-            print("Game over detected")
+    def ai_turn(self):
+        if self.check_game_over():
             return
 
-        current_turn = self.board.get_turn()
-        print(f"Current turn: {'White' if current_turn ==
-            chess.WHITE else 'Black'}")
+        if self.board.get_turn() != self.ai_color:
+            return
 
-        if current_turn == self.ai_color:
-            move = self.ai.make_move()
-            if move:
-                print(f"AI move: {move}")
-                if move in self.board.get_legal_moves():
-                    self.board.push_move(move)
-                    self.log_move(move, "AI")
-                else:
-                    print(f"Invalid move by AI: {move}")
-            else:
-                print("AI returned no move")
-        else:
-            move = self.make_random_opponent_move()
-            print(f"Opponent random AI move: {move}")
-
+        ai_move = self.ai.make_move()
+        if ai_move:
+            self.board.push_move(ai_move)
+            self.log_move(ai_move, "AI")
+            self.check_game_over()
+        
         self.board.draw_board()
         self.root.update()
-
-        self.root.after(400, self.run_ai_vs_ai)
 
 class AI:
     def __init__(self, color, board, max_depth=2):
@@ -227,88 +242,70 @@ class AI:
         self.load_successful_moves()
 
     def evaluate_board(self):
-        score = 0
         piece_values = {
             chess.PAWN: 1,
             chess.KNIGHT: 3,
             chess.BISHOP: 3,
             chess.ROOK: 5,
             chess.QUEEN: 9,
-            chess.KING: 0
+            chess.KING: 0  # King is invaluable, so no direct score
         }
 
         center_squares = [chess.E4, chess.D4, chess.E5, chess.D5]
+        score = 0
 
         # Check for checkmate or stalemate
         if self.board.is_checkmate():
-            return float('inf') if self.board.get_turn() != self.color else -float('inf')
+            if self.board.get_turn() == self.color:
+                print("Checkmate: AI lost")
+                return -float('inf')  # AI is losing
+            else:
+                print("Checkmate: AI is winning")
+                return float('inf')   # AI is winning
 
         if self.board.is_stalemate():
-            return -float('inf') if self.board.get_turn() == self.color else -100
+            print("Stalemate: Negative points for stalemate")
+            return -50  # Penalize a stalemate with -50 points
 
-        # Iterate over all squares to evaluate piece values
+        # Evaluate piece values and control of center
         for square in chess.SQUARES:
             piece = self.board.get_piece_at(square)
             if piece:
-                piece_value = piece_values.get(piece.piece_type, 0)
-                piece_score = piece_value
-
-                # Control of center squares gets a bonus
-                if square in center_squares:
-                    piece_score += 1.0
-
-                # Pawns advancing towards promotion get a bonus
-                if piece.piece_type == chess.PAWN and piece.color == self.color:
-                    rank_distance = 7 - \
-                        chess.square_rank(
-                            square) if piece.color == chess.WHITE else chess.square_rank(square)
-                    piece_score += (7 - rank_distance) * 0.5
-
-                # Penalize if the piece is in danger
-                if self.board.is_square_attacked(square, not piece.color):
-                    attackers = self.board.get_attackers(
-                        square, not piece.color)
-                    defenders = self.board.get_attackers(square, piece.color)
-
-                    # Basic penalty for being attacked
-                    piece_score -= 0.5 * piece_value
-
-                    # Increase penalty if multiple attackers or attackers are strong
-                    if len(attackers) > 1:
-                        piece_score -= 0.5 * piece_value * len(attackers)
-                    for attacker_square in attackers:
-                        attacking_piece = self.board.get_piece_at(
-                            attacker_square)
-                        if attacking_piece:
-                            attacking_value = piece_values.get(
-                                attacking_piece.piece_type, 0)
-                            if attacking_value > piece_value:
-                                piece_score -= 0.5 * \
-                                    (attacking_value - piece_value)
-
-                # Reward for check and checkmate attempts
-                if self.board.is_check():
-                    king_square = self.board.find_king(not self.color)
-                    attacking_pieces = self.board.get_attackers(
-                        king_square, self.color)
-                    piece_score += len(attacking_pieces) * 0.5
-
+                value = piece_values[piece.piece_type]
                 if piece.color == self.color:
-                    score += piece_score
+                    score += value
+                    print(f"AI piece {piece} at {square} adds {
+                        value}. Current score: {score}")
                 else:
-                    score -= piece_score
+                    score -= value
+                    print(f"Opponent piece {piece} at {square} subtracts {
+                        value}. Current score: {score}")
 
-        # Penalize repeated moves
-        for move in self.past_moves:
-            if move in self.board.get_legal_moves():
-                score -= 1
+                # Bonus for controlling the center
+                if square in center_squares:
+                    if piece.color == self.color:
+                        score += 0.5  # Small bonus for controlling center
+                        print(f"AI piece {piece} controls center at {
+                            square}. Bonus: 0.5. Current score: {score}")
+                    else:
+                        score -= 0.5
+                        print(f"Opponent piece {piece} controls center at {
+                            square}. Penalty: -0.5. Current score: {score}")
+
+        # Evaluate sacrifices
+        # Check if sacrificing a piece results in a better score
+        if self.board.is_check():
+            king_square = self.board.find_king(not self.color)
+            attacking_pieces = self.board.get_attackers(king_square, self.color)
+            score += len(attacking_pieces) * 0.5
+            print(f"Attacking king with {len(attacking_pieces)} pieces. Bonus: {
+                len(attacking_pieces) * 0.5}. Current score: {score}")
 
         return score
 
     def minimax(self, depth, alpha, beta, maximizing_player):
         if depth == 0 or self.board.is_game_over():
-            print(f"Evaluating position at depth {
-                depth} with score: {self.evaluate_board()}")
+            print(f"Evaluating position at depth {depth} with score: {self.evaluate_board()}")
             return self.evaluate_board(), None
 
         legal_moves = list(self.board.get_legal_moves())
@@ -327,8 +324,8 @@ class AI:
                 if evaluation > max_eval:
                     max_eval = evaluation
                     best_move = move
-                    print(f"Maximizing: New best move found: {
-                        move} with evaluation {max_eval}")
+                    # print(f"Maximizing: New best move found: {
+                    #     move} with evaluation {max_eval}")
 
                 alpha = max(alpha, evaluation)
                 if beta <= alpha:
@@ -336,7 +333,7 @@ class AI:
 
             return max_eval, best_move
         else:
-            print("Minimizing player")
+            # print("Minimizing player")
             min_eval = float('inf')
             for move in legal_moves:
                 self.board.push_move(move)
@@ -346,8 +343,8 @@ class AI:
                 if evaluation < min_eval:
                     min_eval = evaluation
                     best_move = move
-                    print(f"Minimizing: New best move found: {
-                        move} with evaluation {min_eval}")
+                    # print(f"Minimizing: New best move found: {
+                    #     move} with evaluation {min_eval}")
 
                 beta = min(beta, evaluation)
                 if beta <= alpha:
@@ -381,8 +378,8 @@ class AI:
         for move in self.successful_moves:
             translated_move = self.translate_move(chess.Move(move[0], move[1]))
             if translated_move in legal_moves:
-                print(f"Making successful move: {translated_move}")
+                # print(f"Making successful move: {translated_move}")
                 return translated_move
 
-        print("No successful move found, evaluating best move.")
+        # print("No successful move found, evaluating best move.")
         return self.make_best_move()
