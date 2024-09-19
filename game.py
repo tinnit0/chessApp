@@ -246,7 +246,16 @@ class AI:
         }
 
         center_squares = [chess.E4, chess.D4, chess.E5, chess.D5]
+        development_bonus = 0.1
         score = 0
+
+        #developement
+        starting_squares = {
+            chess.KNIGHT: [chess.B1, chess.G1] if self.color == chess.WHITE else [chess.B8, chess.G8],
+            chess.BISHOP: [chess.C1, chess.F1] if self.color == chess.WHITE else [chess.C8, chess.F8],
+            chess.ROOK: [chess.A1, chess.H1] if self.color == chess.WHITE else [
+                chess.A8, chess.H8]
+        }
 
         # Check for checkmate or stalemate
         if self.board.is_checkmate():
@@ -258,7 +267,7 @@ class AI:
         if self.board.is_stalemate():
             return -50
 
-        # Evaluate piece values and control of center
+        # control of center and pieces
         for square in chess.SQUARES:
             piece = self.board.get_piece_at(square)
             if piece:
@@ -275,10 +284,16 @@ class AI:
                     else:
                         score -= 0.5
 
+                # Bonus for developing pieces
+                if piece.piece_type in [chess.KNIGHT, chess.BISHOP, chess.ROOK]:
+                    if square not in starting_squares.get(piece.piece_type, []):
+                        score += development_bonus
+
         # Check if sacrificing a piece results in a better score
         if self.board.is_check():
             king_square = self.board.find_king(not self.color)
-            attacking_pieces = self.board.get_attackers(king_square, self.color)
+            attacking_pieces = self.board.get_attackers(
+                king_square, self.color)
             score += len(attacking_pieces) * 0.5
 
         return score
@@ -301,8 +316,6 @@ class AI:
                 if evaluation > max_eval:
                     max_eval = evaluation
                     best_move = move
-                    # print(f"Maximizing: New best move found: {
-                    #     move} with evaluation {max_eval}")
 
                 alpha = max(alpha, evaluation)
                 if beta <= alpha:
@@ -310,7 +323,6 @@ class AI:
 
             return max_eval, best_move
         else:
-            # print("Minimizing player")
             min_eval = float('inf')
             for move in legal_moves:
                 self.board.push_move(move)
@@ -320,15 +332,13 @@ class AI:
                 if evaluation < min_eval:
                     min_eval = evaluation
                     best_move = move
-                    # print(f"Minimizing: New best move found: {
-                    #     move} with evaluation {min_eval}")
 
                 beta = min(beta, evaluation)
                 if beta <= alpha:
                     break
 
             return min_eval, best_move
-        
+
     def make_best_move(self):
         _, best_move = self.minimax(
             self.max_depth, -float('inf'), float('inf'), True)
@@ -355,8 +365,6 @@ class AI:
         for move in self.successful_moves:
             translated_move = self.translate_move(chess.Move(move[0], move[1]))
             if translated_move in legal_moves:
-                # print(f"Making successful move: {translated_move}")
                 return translated_move
 
-        # print("No successful move found, evaluating best move.")
         return self.make_best_move()
