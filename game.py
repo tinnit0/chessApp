@@ -260,7 +260,10 @@ class AI:
 
         # Check for checkmate or stalemate
         if self.board.is_checkmate():
-            return float('inf') if self.board.turn != self.color else -float('inf')
+            if self.board.get_turn() == self.color:
+                return -float('inf')  # AI is losing
+            else:
+                return float('inf')   # AI is winning
 
         if self.board.is_stalemate():
             return -50
