@@ -242,7 +242,7 @@ class AI:
             chess.BISHOP: 3,
             chess.ROOK: 5,
             chess.QUEEN: 9,
-            chess.KING: 0  # King is invaluable, so no direct score
+            chess.KING: 0
         }
 
         center_squares = [chess.E4, chess.D4, chess.E5, chess.D5]
@@ -275,7 +275,6 @@ class AI:
                     else:
                         score -= 0.5
 
-        # Evaluate sacrifices
         # Check if sacrificing a piece results in a better score
         if self.board.is_check():
             king_square = self.board.find_king(not self.color)
@@ -296,7 +295,6 @@ class AI:
             for move in legal_moves:
                 self.board.push_move(move)
 
-                # Toggle to minimizing_player
                 evaluation, _ = self.minimax(depth - 1, alpha, beta, False)
                 self.board.pop_move()
 
