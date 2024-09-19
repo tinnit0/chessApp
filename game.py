@@ -247,9 +247,10 @@ class AI:
 
         center_squares = [chess.E4, chess.D4, chess.E5, chess.D5]
         development_bonus = 0.1
+        king_safety_bonus = 0.5
         score = 0
 
-        #developement
+        # Develop pieces from starting positions
         starting_squares = {
             chess.KNIGHT: [chess.B1, chess.G1] if self.color == chess.WHITE else [chess.B8, chess.G8],
             chess.BISHOP: [chess.C1, chess.F1] if self.color == chess.WHITE else [chess.C8, chess.F8],
@@ -259,15 +260,11 @@ class AI:
 
         # Check for checkmate or stalemate
         if self.board.is_checkmate():
-            if self.board.get_turn() == self.color:
-                return -float('inf')  # AI is losing
-            else:
-                return float('inf')   # AI is winning
+            return float('inf') if self.board.turn != self.color else -float('inf')
 
         if self.board.is_stalemate():
             return -50
 
-        # control of center and pieces
         for square in chess.SQUARES:
             piece = self.board.get_piece_at(square)
             if piece:
@@ -277,24 +274,23 @@ class AI:
                 else:
                     score -= value
 
-                # Bonus for controlling the center
+                # center control
                 if square in center_squares:
-                    if piece.color == self.color:
-                        score += 0.5
-                    else:
-                        score -= 0.5
+                    score += 0.5 if piece.color == self.color else -0.5
 
-                # Bonus for developing pieces
+                # developing
                 if piece.piece_type in [chess.KNIGHT, chess.BISHOP, chess.ROOK]:
                     if square not in starting_squares.get(piece.piece_type, []):
                         score += development_bonus
 
-        # Check if sacrificing a piece results in a better score
-        if self.board.is_check():
-            king_square = self.board.find_king(not self.color)
-            attacking_pieces = self.board.get_attackers(
-                king_square, self.color)
-            score += len(attacking_pieces) * 0.5
+                # usseless moves
+                if piece.piece_type in [chess.KING, chess.ROOK] and square in starting_squares.get(piece.piece_type, []):
+                    score -= 0.2
+
+        # Kings safety
+        king_square = self.board.find_king(self.color)
+        if king_square in [chess.G1, chess.G8, chess.C1, chess.C8]:  # Castling
+            score += king_safety_bonus
 
         return score
 
