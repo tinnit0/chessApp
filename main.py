@@ -13,9 +13,8 @@ def load_image(filename, size):
 
 
 class ChessApp:
-    def __init__(self, root=None, light_mode=False):
+    def __init__(self, root=None):
         self.root = root
-        self.light_mode = light_mode
         self.board_size = BOARD_SIZE
         self.square_size = SQUARE_SIZE
 
@@ -25,19 +24,12 @@ class ChessApp:
             self.canvas.pack()
 
         self.images = self.load_images()
-        self.game = ChessGame(self.canvas if not light_mode else None, self.images if not light_mode else {
-        }, self.root if not light_mode else None)
+        self.game = ChessGame(self.canvas, self.images, self.root)
+        self.setup_ui()
 
-        if not light_mode:
-            self.setup_ui()
-        else:
-            self.run_light_mode()
 
     def setup_ui(self):
         self.root.title("Chess Game")
-        settings_button = tk.Button(
-            self.root, text="Settings", command=self.open_settings)
-        settings_button.pack()
         self.canvas.bind("<Button-1>", self.game.handle_click)
 
     def load_images(self):
@@ -57,22 +49,6 @@ class ChessApp:
             'P': load_image('images/pW.png', size),
         }
 
-    def open_settings(self):
-        settings_window = tk.Toplevel(self.root)
-        settings_window.title("Settings")
-        tk.Label(settings_window, text="Resolution:").pack()
-        resolution_var = tk.StringVar(value=str(self.board_size))
-        resolutions = [540, 1080]
-        for res in resolutions:
-            tk.Radiobutton(
-                settings_window,
-                text=f"{res}x{res}",
-                variable=resolution_var,
-                value=str(res),
-                command=lambda: self.change_resolution(
-                    int(resolution_var.get()))
-            ).pack()
-
     def change_resolution(self, new_size):
         self.board_size = new_size
         self.square_size = new_size // 8
@@ -80,11 +56,6 @@ class ChessApp:
         self.images = self.load_images()
         self.game.update_images(self.images)
         self.game.redraw_board()
-
-    def run_light_mode(self):
-        ai_color = chess.WHITE
-        ai = AI(ai_color, self.game.board)
-        self.play_game(ai_color, ai)
 
     def restart_game(self):
         self.game = ChessGame(None, {}, None)
@@ -115,10 +86,6 @@ class ChessApp:
 
 
 if __name__ == "__main__":
-    mode = input("'1' for light mode: ")
-    if mode.lower() == '1':
-        ChessApp(light_mode=True)
-    else:
         root = tk.Tk()
         ChessApp(root)
         root.mainloop()
